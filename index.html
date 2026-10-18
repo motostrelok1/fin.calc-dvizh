@@ -9,7 +9,7 @@
 .panel h2{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .drag-handle{border:1px solid #d7e0ec;background:#f3f7fc;color:#54718f;padding:6px 9px;font-size:15px;cursor:grab;touch-action:none;user-select:none;flex:none}
 .drag-handle:active{cursor:grabbing}
-.panel.dragging{opacity:.5;border-style:dashed}
+.panel.dragging{opacity:.55;border-style:dashed;pointer-events:none}
 .panel.drag-over{outline:3px solid #2778dc;outline-offset:2px}
 .dashboard-footer{margin-top:22px}
 .unit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -38,10 +38,36 @@ cards.forEach((card,i)=>{card.dataset.panelId=['expenses','marketing','instructo
 function savePanelOrder(){state.panelOrder=Array.from(dashboard.querySelectorAll(':scope > .panel')).map(x=>x.dataset.panelId);queueSave()}
 function arrangePanels(){const order=Array.isArray(state.panelOrder)?state.panelOrder:[];const map=new Map(cards.map(x=>[x.dataset.panelId,x]));order.forEach(id=>{const el=map.get(id);if(el)dashboard.appendChild(el)});}
 arrangePanels();
-let moving=null;
-dashboard.addEventListener('dragstart',e=>{const h=e.target.closest('.drag-handle');if(!h)return;moving=h.closest('.panel');moving.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',moving.dataset.panelId)});
-dashboard.addEventListener('dragover',e=>{if(!moving)return;const target=e.target.closest('.panel');if(!target||target===moving)return;e.preventDefault();e.dataTransfer.dropEffect='move';dashboard.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));target.classList.add('drag-over')});
-dashboard.addEventListener('drop',e=>{if(!moving)return;const target=e.target.closest('.panel');if(!target||target===moving)return;e.preventDefault();const r=target.getBoundingClientRect();const before=e.clientY<r.top+r.height/2;dashboard.insertBefore(moving,before?target:target.nextSibling);savePanelOrder();dashboard.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'))});
-dashboard.addEventListener('dragend',()=>{dashboard.querySelectorAll('.dragging,.drag-over').forEach(x=>x.classList.remove('dragging','drag-over'));moving=null});
+let moving=null, pointerId=null, startX=0, startY=0, activeDrag=false, hoverTarget=null;
+const clearDrag=()=>{dashboard.querySelectorAll('.dragging,.drag-over').forEach(el=>el.classList.remove('dragging','drag-over'));moving=null;pointerId=null;activeDrag=false;hoverTarget=null};
+dashboard.querySelectorAll('.drag-handle').forEach(handle=>{
+  handle.draggable=false;
+  handle.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    moving=handle.closest('.panel');pointerId=e.pointerId;startX=e.clientX;startY=e.clientY;activeDrag=false;
+    handle.setPointerCapture(e.pointerId);e.preventDefault();
+  });
+  handle.addEventListener('pointermove',e=>{
+    if(pointerId!==e.pointerId||!moving)return;
+    if(!activeDrag&&Math.hypot(e.clientX-startX,e.clientY-startY)<6)return;
+    activeDrag=true;moving.classList.add('dragging');
+    const under=document.elementFromPoint(e.clientX,e.clientY);
+    const target=under&&under.closest('.layout > .panel');
+    dashboard.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+    hoverTarget=target&&target!==moving?target:null;
+    if(hoverTarget)hoverTarget.classList.add('drag-over');
+  });
+  handle.addEventListener('pointerup',e=>{
+    if(pointerId!==e.pointerId)return;
+    if(activeDrag&&moving&&hoverTarget){
+      const a=Array.from(dashboard.children),from=a.indexOf(moving),to=a.indexOf(hoverTarget);
+      if(from<to)dashboard.insertBefore(moving,hoverTarget.nextSibling);
+      else dashboard.insertBefore(moving,hoverTarget);
+      savePanelOrder();
+    }
+    clearDrag();
+  });
+  handle.addEventListener('pointercancel',clearDrag);
+});
 customRender();update();})();
 </script></body></html>
