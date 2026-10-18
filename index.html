@@ -80,7 +80,7 @@ cards.forEach((card,i)=>{
  const summary=document.createElement('div');summary.className='panel-summary';card.appendChild(summary);const grip=document.createElement('span');grip.className='resize-grip';grip.textContent='◢';grip.title='Потяните для изменения ширины и высоты';grip.setAttribute('role','separator');card.appendChild(grip);
  const controls=document.createElement('span');controls.className='panel-controls';const compactBtn=document.createElement('button');compactBtn.type='button';controls.append(compactBtn);header.insertBefore(controls,handle);
  const id=card.dataset.panelId;
- function refreshView(){const saved=state.panelSizes[id];card.style.width=(saved?saved.w:(state.panelViews[id]&&state.panelViews[id].horizontal?760:420))+'px';card.style.height='auto';card.style.minHeight=(saved?saved.h:160)+'px';const p=state.panelViews[id]||{compact:false,horizontal:false};card.classList.toggle('compact',!!p.compact);compactBtn.textContent=p.compact?'⚙ Настройки':'◫ Только показатели';}
+ function refreshView(){const saved=state.panelSizes[id];card.style.width=(saved?saved.w:(state.panelViews[id]&&state.panelViews[id].horizontal?760:420))+'px';card.style.height='auto';const p=state.panelViews[id]||{compact:false,horizontal:false};card.style.minHeight=p.compact?'0px':(saved?saved.h:160)+'px';card.classList.toggle('compact',!!p.compact);compactBtn.textContent=p.compact?'⚙ Настройки':'◫ Только показатели';}
  compactBtn.onclick=()=>{const p=state.panelViews[id]||(state.panelViews[id]={compact:false,horizontal:false});p.compact=!p.compact;refreshView();queueSave();requestAnimationFrame(keepCanvasTall)};
  card.refreshView=refreshView;refreshView();
 });
