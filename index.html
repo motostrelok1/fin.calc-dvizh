@@ -176,8 +176,36 @@ cards.forEach(card=>{
  });
  grip.addEventListener('pointercancel',()=>{operation=null;positionCards()});
 });
-const resizeObserver=new ResizeObserver(()=>keepCanvasTall());
-cards.forEach(card=>resizeObserver.observe(card));
+// Push cards below an expanding card in the same horizontal lane.
+// Track previous heights so collapsing restores exactly the displaced space.
+const previousHeights=new WeakMap();
+let reflowPending=false;
+function shiftFollowingCards(source,delta,oldHeight){
+ if(Math.abs(delta)<0.5||drag)return;
+ const left=source.offsetLeft,right=left+source.offsetWidth,oldBottom=source.offsetTop+oldHeight;
+ const descendants=cards.filter(card=>card!==source&&card.offsetTop>=oldBottom-3&&card.offsetLeft<right-8&&card.offsetLeft+card.offsetWidth>left+8);
+ // Move cards whose horizontal footprint overlaps, keeping user-authored X positions.
+ descendants.forEach(card=>{
+  const id=card.dataset.panelId;
+  const y=Math.max(0,card.offsetTop+delta);
+  card.style.top=y+'px';
+  const prev=state.panelPositions[id]||{x:card.offsetLeft,y:0};
+  state.panelPositions[id]={x:prev.x,y};
+ });
+ if(descendants.length)queueSave();
+}
+const resizeObserver=new ResizeObserver(entries=>{
+ let moved=false;
+ for(const entry of entries){
+  const card=entry.target,now=card.offsetHeight,old=previousHeights.get(card);
+  previousHeights.set(card,now);
+  if(old!==undefined&&Math.abs(now-old)>0.5&&!drag){
+   shiftFollowingCards(card,now-old,old);moved=true;
+  }
+ }
+ keepCanvasTall();
+});
+cards.forEach(card=>{previousHeights.set(card,card.offsetHeight);resizeObserver.observe(card)});
 window.addEventListener('resize',positionCards);
 function updatePanelSummaries(){
  const m=metrics();
