@@ -149,24 +149,38 @@ function keepCanvasTall(){
   dashboard.style.height=Math.max(750,bottom+30)+'px';
 }
 // Keep free positioning, but never allow cards to occupy the same space.
-function resolveCardOverlaps(priorityCard=null){
- const gap=12,ordered=[...cards].sort((a,b)=>a.offsetTop-b.offsetTop||a.offsetLeft-b.offsetLeft);
- if(priorityCard){const i=ordered.indexOf(priorityCard);if(i>=0){ordered.splice(i,1);ordered.unshift(priorityCard)}}
- const placed=[];
- for(const card of ordered){
-  let y=Math.max(0,card.offsetTop),x=card.offsetLeft;
-  let changed=true,steps=0;
-  while(changed&&steps++<cards.length+2){
-   changed=false;
-   for(const other of placed){
-    const crossesX=x<other.offsetLeft+other.offsetWidth+gap&&x+card.offsetWidth+gap>other.offsetLeft;
-    const crossesY=y<other.offsetTop+other.offsetHeight+gap&&y+card.offsetHeight+gap>other.offsetTop;
-    if(crossesX&&crossesY){y=other.offsetTop+other.offsetHeight+gap;changed=true}
-   }
+// Snap the moving card to a neighbour's edge. Never push other cards.
+function snapCardPosition(card,wantedX,wantedY){
+ const gap=8,width=card.offsetWidth,height=card.offsetHeight,maxX=Math.max(0,dashboard.clientWidth-width);
+ const clamp=(x,y)=>({x:Math.max(0,Math.min(maxX,x)),y:Math.max(0,y)});
+ const collides=(p,other)=>p.x<other.offsetLeft+other.offsetWidth+gap&&p.x+width+gap>other.offsetLeft&&p.y<other.offsetTop+other.offsetHeight+gap&&p.y+height+gap>other.offsetTop;
+ const others=cards.filter(c=>c!==card);
+ let candidate=clamp(wantedX,wantedY),iteration=0;
+ while(iteration++<cards.length*3){
+  const hit=others.find(other=>collides(candidate,other));
+  if(!hit)break;
+  const options=[
+   clamp(hit.offsetLeft-width-gap,candidate.y),
+   clamp(hit.offsetLeft+hit.offsetWidth+gap,candidate.y),
+   clamp(candidate.x,hit.offsetTop-height-gap),
+   clamp(candidate.x,hit.offsetTop+hit.offsetHeight+gap)
+  ].filter(p=>!others.some(other=>collides(p,other)));
+  if(!options.length){
+   // A horizontal edge might be blocked: find the nearest vertical free position.
+   options.push(clamp(candidate.x,Math.max(...others.map(c=>c.offsetTop+c.offsetHeight+gap))));
   }
-  if(Math.abs(y-card.offsetTop)>0.5)card.style.top=y+'px';
-  state.panelPositions[card.dataset.panelId]={x:card.offsetLeft,y:card.offsetTop};
-  placed.push(card);
+  options.sort((p,q)=>(p.x-wantedX)**2+(p.y-wantedY)**2-(q.x-wantedX)**2-(q.y-wantedY)**2);
+  candidate=options[0];
+ }
+ return candidate;
+}
+function resolveCardOverlaps(priorityCard=null){
+ const ordered=[...cards].sort((a,b)=>a.offsetTop-b.offsetTop||a.offsetLeft-b.offsetLeft);
+ if(priorityCard){const i=ordered.indexOf(priorityCard);if(i>=0){ordered.splice(i,1);ordered.push(priorityCard)}}
+ for(const card of ordered){
+  const p=snapCardPosition(card,card.offsetLeft,card.offsetTop);
+  card.style.left=p.x+'px';card.style.top=p.y+'px';
+  state.panelPositions[card.dataset.panelId]={x:p.x,y:p.y};
  }
  keepCanvasTall();
 }
@@ -196,7 +210,8 @@ cards.forEach(card=>{
     const dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;
     const x=Math.max(0,Math.min(drag.originX+dx,Math.max(0,dashboard.clientWidth-card.offsetWidth)));
     const y=Math.max(0,drag.originY+dy);
-    card.style.left=x+'px';card.style.top=y+'px';
+    const snapped=snapCardPosition(card,x,y);
+    card.style.left=snapped.x+'px';card.style.top=snapped.y+'px';
     keepCanvasTall();
   });
   handle.addEventListener('pointerup',e=>{
