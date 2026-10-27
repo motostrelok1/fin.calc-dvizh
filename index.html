@@ -31,6 +31,39 @@
 .unit-note{font-size:13px;color:#64758a;line-height:1.6;margin-top:15px}
 @media(max-width:480px){.unit-grid .stat b{font-size:17px}}
 @media print{.layout{height:auto!important;display:block}.layout>.panel,.layout>.panel:nth-child(n){position:static!important;width:100%!important;margin-bottom:14px}.drag-handle{display:none!important}}
+
+/* Card-local responsive layout: dashboard cards can be narrower than the viewport. */
+.layout>.panel{min-width:min(260px,100%);overflow:visible!important}
+.layout>.panel *{min-width:0}
+.layout>.panel h2{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px;overflow-wrap:anywhere}
+.layout>.panel h2 .panel-title{flex:1 1 115px;min-width:0}
+.layout>.panel h2 .panel-controls{flex:0 1 auto;min-width:0;display:flex;flex-wrap:wrap;gap:5px}
+.layout>.panel h2 .panel-controls button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.layout>.panel h2 .drag-handle{flex:0 0 auto;margin-left:auto}
+.layout>.panel .panel-detail,.layout>.panel .car-detail,.layout>.panel .field,.layout>.panel .stats,.layout>.panel .stat,.layout>.panel .tariff-section{min-width:0;max-width:100%}
+.layout>.panel .field-head,.layout>.panel .line{flex-wrap:wrap;gap:6px}
+.layout>.panel .field-head>*,.layout>.panel .line>*{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.layout>.panel input,.layout>.panel select,.layout>.panel button{box-sizing:border-box;max-width:100%}
+.layout>.panel input[type="range"]{min-width:0;width:100%;max-width:100%}
+.layout>.panel .add-grid,.layout>.panel .car-detail #addCarForm{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;gap:8px}
+.layout>.panel .add-grid input{width:100%;min-width:0}
+.layout>.panel .add-grid button{grid-column:auto;white-space:normal;overflow-wrap:anywhere}
+.layout>.panel .car-tabs,.layout>.panel .tariff-tabs,.layout>.panel .mode,.layout>.panel .toggles{flex-wrap:wrap}
+.layout>.panel .car-tabs button,.layout>.panel .tariff-tabs button{min-width:0}
+.layout>.panel .stat b,.layout>.panel .expense-total strong{overflow-wrap:anywhere;white-space:normal}
+@container (max-width:480px){
+ .layout>.panel h2 .panel-title{flex-basis:100%}
+ .layout>.panel h2 .panel-controls{flex:1 1 auto}
+}
+@container (max-width:350px){
+ .layout>.panel .add-grid,.layout>.panel .car-detail #addCarForm{grid-template-columns:minmax(0,1fr)}
+ .layout>.panel .add-grid button{grid-column:1}
+ .layout>.panel .panel-summary,.layout>.panel .stats,.layout>.panel .unit-grid{grid-template-columns:minmax(0,1fr)!important}
+ .layout>.panel .car-tabs button{flex:1 1 100%}
+ .layout>.panel .field-head>strong{white-space:normal}
+ .layout>.panel .schedule-top-row{flex-wrap:wrap}
+ .layout>.panel .schedule-top-row .schedule-switch{flex-wrap:wrap}
+}
 </style></head><body><main class="wrap"><h1>Финансовая модель автошколы</h1><p class="lead">Интерактивный расчёт набора курсантов · данные автоматически сохраняются на этом устройстве</p><div class="top-actions"><button class="primary" id="save">Сохранить сейчас</button><button id="export">Экспорт JSON</button><button id="import">Импорт JSON</button><button id="reset">Сбросить настройки</button><span class="save-state" id="status" aria-live="polite"></span><input type="file" id="file" accept=".json,application/json" hidden></div><section class="overview" aria-label="Ключевые финансовые показатели"><div class="overview-heading"><div><span class="overview-eyebrow">Юнит-экономика курса</span><h2>Расчёт прибыли и безубыточности</h2></div><div class="overview-mode"><button type="button" id="overviewNormal">Обычный</button><button type="button" id="overviewBreak">Безубыточность</button></div></div><div class="overview-kpis"><div class="overview-kpi"><small>Выручка</small><b id="overviewRevenue">—</b></div><div class="overview-kpi"><small>Все расходы</small><b id="overviewCosts">—</b></div><div class="overview-kpi overview-profit"><small>Прибыль</small><b id="overviewProfit">—</b></div><div class="overview-kpi"><small>Точка безубыточности</small><b id="overviewThreshold">—</b></div></div></section><div class="layout">
 <section class="panel"><h2>Расходы</h2><div class="field"><label class="switch"><input type="checkbox" id="expensesEnabled"> Учитывать расходы</label><div class="sub">При выключении все расходы этого блока исключаются из расчёта, но настройки сохраняются.</div></div><div class="expense-total"><span>Всего постоянных расходов</span><strong id="fixed"></strong></div><div class="section-label">Постоянные ежемесячные расходы</div><div id="expenseSliders"></div><div class="field"><div class="field-head"><b>Администратор</b><label class="switch"><input type="checkbox" id="hasAdmin"> Есть в штате</label></div><div id="adminSlider"></div></div><div class="field"><div class="field-head"><b>SMM</b><label class="switch"><input type="checkbox" id="hasSmm"> Есть</label></div><div id="smmSlider"></div></div><div class="field"><div class="field-head"><b>Бухгалтер</b><label class="switch"><input type="checkbox" id="hasAccountant"> Есть</label></div><div id="accountantSlider"></div></div><div id="extraExpenses"></div><form class="add-grid" id="addForm"><input id="expenseName" type="text" maxlength="100" placeholder="Новая статья расхода" required aria-label="Название расхода"><input id="expenseAmount" type="number" min="0" step="100" placeholder="₽/мес." required aria-label="Сумма в рублях"><button class="primary" type="submit">+ Добавить</button></form><div class="sub">Любую статью можно отключить без удаления. Суммы и переключатели сохраняются вместе с моделью.</div></section>
 <section class="panel"><h2>Маркетинг</h2><div id="percentSliders"></div><div class="stats"><div class="stat"><small>Бюджет маркетинга на набор</small><b id="marketingBudget"></b></div><div class="stat"><small>Маркетинг на одного курсанта</small><b id="marketingPerStudent"></b></div></div><div class="unit-note">Процент маркетинга рассчитывается от выручки. SMM учитывается отдельно в постоянных расходах, если включён.</div></section>
@@ -93,7 +126,7 @@ cards.forEach((card,i)=>{
   header.appendChild(handle);
  const detail=document.createElement('div');detail.className='panel-detail';while(header.nextSibling)detail.appendChild(header.nextSibling);card.appendChild(detail);
  const summary=document.createElement('div');summary.className='panel-summary';card.appendChild(summary);const grip=document.createElement('span');grip.className='resize-grip';grip.textContent='◢';grip.title='Потяните для изменения ширины и высоты';grip.setAttribute('role','separator');card.appendChild(grip);
- const controls=document.createElement('span');controls.className='panel-controls';const compactBtn=document.createElement('button');compactBtn.type='button';controls.append(compactBtn);header.insertBefore(controls,handle);
+ const controls=document.createElement('span');controls.className='panel-controls';const compactBtn=document.createElement('button');compactBtn.type='button';controls.append(compactBtn);header.insertBefore(controls,handle);const title=document.createElement('span');title.className='panel-title';while(header.firstChild&&header.firstChild!==controls)title.appendChild(header.firstChild);header.insertBefore(title,controls);
  const id=card.dataset.panelId;
  function refreshView(){const saved=state.panelSizes[id];card.style.width=(saved?saved.w:(state.panelViews[id]&&state.panelViews[id].horizontal?760:420))+'px';card.style.height='auto';const p=state.panelViews[id]||{compact:false,horizontal:false};card.style.minHeight=p.compact?'0px':(id==='instructors'&&!state.scheduleExpanded?'0px':(saved?saved.h:160)+'px');card.classList.toggle('compact',!!p.compact);compactBtn.textContent=p.compact?'⚙ Настройки':'◫ Только показатели';}
  compactBtn.onclick=()=>{const p=state.panelViews[id]||(state.panelViews[id]={compact:false,horizontal:false});p.compact=!p.compact;refreshView();queueSave();requestAnimationFrame(keepCanvasTall)};
