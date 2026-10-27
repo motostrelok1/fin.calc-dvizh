@@ -80,8 +80,8 @@ body{zoom:.5;width:100%;max-width:100%;margin:0}
 .dock-tab{font-size:13px;padding:9px 12px;cursor:grab}
 .dock-tab.active{background:#176cce;color:#fff}
 .dock-tab:active{cursor:grabbing}
-#dockContent{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px;align-items:start;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
-#dockContent>.docked-panel:not([hidden]){display:block!important;position:relative!important;grid-column:auto!important;width:100%!important;min-width:0!important;max-width:100%!important;margin:12px 0 0!important;box-sizing:border-box;container-type:inline-size;overflow-wrap:anywhere;box-shadow:none}
+#dockContent{display:flex!important;flex-wrap:nowrap!important;gap:12px;align-items:flex-start;width:100%;min-width:0;max-width:100%;box-sizing:border-box;overflow-x:clip}
+#dockContent>.docked-panel:not([hidden]){display:block!important;position:relative!important;flex:0 0 calc((100% - 24px) / 3)!important;flex-grow:0!important;flex-shrink:0!important;width:calc((100% - 24px) / 3)!important;min-width:0!important;max-width:calc((100% - 24px) / 3)!important;margin:12px 0 0!important;box-sizing:border-box;container-type:inline-size;overflow-wrap:anywhere;box-shadow:none}
 #dockContent>.docked-panel .panel-detail,#dockContent>.docked-panel .field,#dockContent>.docked-panel .stats,#dockContent>.docked-panel .car-detail{min-width:0;max-width:100%;box-sizing:border-box}
 #dockContent>.docked-panel h2,#dockContent>.docked-panel .panel-controls,#dockContent>.docked-panel .field-head,#dockContent>.docked-panel .line{flex-wrap:wrap;min-width:0;max-width:100%}
 #dockContent>.docked-panel .stats,#dockContent>.docked-panel .unit-grid,#dockContent>.docked-panel .panel-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important}
