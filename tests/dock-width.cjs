@@ -155,6 +155,33 @@ const { chromium } = require('playwright');
     const rub=v=>Number(v.replace(/[^0-9]/g,''));const payValid=rub(before.total)===60000&&rub(before.average)===750&&rub(before.row)===60000&&rub(before.result)===60000&&after.count===1&&rub(after.total)===60000&&rub(after.result)===60000&&after.rate==='750'&&after.lessons==='80';
     console.log(JSON.stringify({instructorPayroll:true,valid:payValid,before,after}));
     if(!payValid)failures++;
+    // Driving income is part of tariff revenue; only instructor and simulator payments are costs.
+    await theoryPage.evaluate(()=>{
+      const data=JSON.parse(localStorage.getItem('autoshkola_finmodel_v1'));
+      data.instructorPay=[{id:'one',name:'Первый',rate:1000,lessons:168}];
+      data.tariffs.forEach((t,i)=>{t.students=i===1?15:0;t.hours=30;t.duration=2;t.sim=true;t.simPrice=1200;t.lessonPrice=1200;});
+      data.activeTariff=1;
+      localStorage.setItem('autoshkola_finmodel_v1',JSON.stringify(data));
+    });
+    await theoryPage.reload({waitUntil:'load'});
+    const drive=await theoryPage.evaluate(()=>({
+      income:document.querySelector('#driving').textContent,
+      payroll:document.querySelector('#instructorPayrollSummary').textContent,
+      simulator:document.querySelector('#simulatorTotal').textContent,
+      profit:document.querySelector('#drivingProfit').textContent,
+      total:document.querySelector('#totalCost').textContent,
+      teacher:document.querySelector('#teacherSalarySummary').textContent,
+      fixed:document.querySelector('#fixedSummary').textContent,
+      leasing:document.querySelector('#leasingSummary').textContent,
+      tax:document.querySelector('#taxes').textContent,
+      marketing:document.querySelector('#ads').textContent
+    }));
+    const number=v=>Number(v.replace(/[^0-9-]/g,''));
+    const expectedProfit=number(drive.income)-number(drive.payroll)-number(drive.simulator);
+    const expectedExpenses=['payroll','simulator','teacher','fixed','leasing','tax','marketing'].reduce((n,k)=>n+number(drive[k]),0);
+    const profitValid=number(drive.profit)===expectedProfit&&Math.abs(number(drive.total)-expectedExpenses)<=2;
+    console.log(JSON.stringify({drivingProfitCheck:true,valid:profitValid,...drive}));
+    if(!profitValid)failures++;
     await theoryPage.close();
   }finally{await browser.close();}
   if(failures)throw Error(failures+' dock scenarios failed');
