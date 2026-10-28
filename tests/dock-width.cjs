@@ -129,6 +129,32 @@ const { chromium } = require('playwright');
     const selectedValid=parse(selected.count)*parse(selected.students)===parse(selected.needed)&&parse(selected.needed)===210;
     console.log(JSON.stringify({selectedTariffDemand:true,valid:selectedValid,...selected}));
     if(!selectedValid)failures++;
+    // Instructor payroll: add an instructor, set rate and lessons, verify total and reload.
+    await theoryPage.locator('#instructorPayDetails').evaluate(el=>el.open=true);
+    await theoryPage.locator('#instructorPayName').fill('Тестовый инструктор');
+    await theoryPage.locator('#instructorPayForm button[type="submit"]').click();
+    const rate=theoryPage.locator('.payroll-item .pay-rate').last();
+    const lessons=theoryPage.locator('.payroll-item .pay-lessons').last();
+    await rate.evaluate(el=>{el.value='750';el.dispatchEvent(new Event('input',{bubbles:true}))});
+    await lessons.evaluate(el=>{el.value='80';el.dispatchEvent(new Event('input',{bubbles:true}))});
+    await theoryPage.waitForTimeout(300);
+    const before=await theoryPage.evaluate(()=>({
+      total:document.querySelector('#instructorPayTotal').textContent,
+      average:document.querySelector('#instructorPayAverage').textContent,
+      result:document.querySelector('#instructorPayrollSummary').textContent,
+      row:document.querySelector('.payroll-item .pay-sum').textContent
+    }));
+    await theoryPage.reload({waitUntil:'load'});
+    const after=await theoryPage.evaluate(()=>({
+      count:document.querySelectorAll('.payroll-item').length,
+      total:document.querySelector('#instructorPayTotal').textContent,
+      result:document.querySelector('#instructorPayrollSummary').textContent,
+      rate:document.querySelector('.payroll-item .pay-rate').value,
+      lessons:document.querySelector('.payroll-item .pay-lessons').value
+    }));
+    const rub=v=>Number(v.replace(/[^0-9]/g,''));const payValid=rub(before.total)===60000&&rub(before.average)===750&&rub(before.row)===60000&&rub(before.result)===60000&&after.count===1&&rub(after.total)===60000&&rub(after.result)===60000&&after.rate==='750'&&after.lessons==='80';
+    console.log(JSON.stringify({instructorPayroll:true,valid:payValid,before,after}));
+    if(!payValid)failures++;
     await theoryPage.close();
   }finally{await browser.close();}
   if(failures)throw Error(failures+' dock scenarios failed');
