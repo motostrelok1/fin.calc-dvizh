@@ -107,6 +107,28 @@ const { chromium } = require('playwright');
       console.log(JSON.stringify({hours,duration,students,expected,valid,...vals}));
       if(!valid)failures++;
     }
+    // The displayed selected tariff count must equal lessons per student × selected students.
+    await theoryPage.evaluate(()=>{
+      const state=JSON.parse(localStorage.getItem('autoshkola_finmodel_v1'));
+      state.activeTariff=1;
+      state.tariffs[1].students=15;
+      state.tariffs[1].hours=30;
+      state.tariffs[1].duration=2;
+      state.tariffs[1].sim=true;
+      state.tariffs[0].students=9;
+      state.tariffs[2].students=7;
+      localStorage.setItem('autoshkola_finmodel_v1',JSON.stringify(state));
+    });
+    await theoryPage.reload({waitUntil:'load'});
+    const selected=await theoryPage.evaluate(()=>({
+      count:document.querySelector('#lessonCount').textContent,
+      students:document.querySelector('#tariffCountVal').textContent,
+      needed:document.querySelector('#totalLessons').textContent
+    }));
+    const parse=v=>Number(v.replace(/\\s/g,'').replace(',','.'));
+    const selectedValid=parse(selected.count)*parse(selected.students)===parse(selected.needed)&&parse(selected.needed)===210;
+    console.log(JSON.stringify({selectedTariffDemand:true,valid:selectedValid,...selected}));
+    if(!selectedValid)failures++;
     await theoryPage.close();
   }finally{await browser.close();}
   if(failures)throw Error(failures+' dock scenarios failed');
