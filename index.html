@@ -92,6 +92,8 @@ body{zoom:.5;width:100%;max-width:100%;margin:0}
 #dockContent>.docked-panel .add-grid,#dockContent>.docked-panel .car-detail #addCarForm{grid-template-columns:minmax(0,1fr)!important;width:100%}
 #dockContent>.docked-panel .add-grid button{grid-column:1}
 #dockContent>.docked-panel #addCarForm>input,#dockContent>.docked-panel #addCarForm>button{display:block!important;grid-column:1!important;width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
+/* Consistent height for car name entry and its Add button, including pinned cards. */
+#addCarForm>input,#addCarForm>button{height:38px!important;min-height:38px!important;max-height:38px!important;line-height:20px!important;padding:8px 12px!important;box-sizing:border-box!important}
 #dockContent>.docked-panel input[type=range]{width:100%;max-width:100%}
 .dashboard-dock .docked-panel .resize-grip,.dashboard-dock .docked-panel .drag-handle{display:none}
 .dock-toggle{font-size:12px;padding:6px 8px}
