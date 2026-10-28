@@ -34,6 +34,8 @@ const { chromium } = require('playwright');
     // Classroom teacher pay is the slider value per group (max 15 students).
     const theoryPage=await browser.newPage({viewport:{width:1366,height:900}});
     await theoryPage.goto('http://127.0.0.1:8765/',{waitUntil:'load'});
+    // Persist initialized application defaults before changing the saved tariff objects.
+    await theoryPage.locator('#save').click();
     for(const [students,perStudent,expense] of [[5,1200,6000],[15,400,6000],[16,750,12000],[30,400,12000]]){
       await theoryPage.evaluate(n=>{
         const state=JSON.parse(localStorage.getItem('autoshkola_finmodel_v1')||'{}');
