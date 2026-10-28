@@ -48,6 +48,10 @@ html{zoom:1}body{zoom:0.5}
 .layout>.panel input,.layout>.panel select,.layout>.panel button{box-sizing:border-box;max-width:100%}
 .layout>.panel input[type="range"]{min-width:0;width:100%;max-width:100%}
 .layout>.panel .add-grid,.layout>.panel .car-detail #addCarForm{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;gap:8px}
+/* Car name and Add button share one full-width column at every card size. */
+.layout>.panel .car-detail #addCarForm{grid-template-columns:minmax(0,1fr);width:100%;max-width:100%}
+.layout>.panel .car-detail #addCarForm>input,
+.layout>.panel .car-detail #addCarForm>button{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;grid-column:1}
 .layout>.panel .add-grid input{width:100%;min-width:0}
 .layout>.panel .add-grid button{grid-column:auto;white-space:normal;overflow-wrap:anywhere}
 .layout>.panel .car-tabs,.layout>.panel .tariff-tabs,.layout>.panel .mode,.layout>.panel .toggles{flex-wrap:wrap}
