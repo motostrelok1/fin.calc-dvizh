@@ -19,7 +19,7 @@ const { chromium } = require('playwright');
     teacherSalary:document.querySelector('#teacherSalarySummary')?.textContent,
     classSalary:document.querySelector('#teacherSalaryRow strong')?.textContent
    }));
-   const nums=Object.fromEntries(Object.entries(got).map(([k,v])=>[k,Number((v||'').replace(/[^\\d]/g,''))]));
+   const nums=Object.fromEntries(Object.entries(got).map(([k,v])=>[k,Number((v||'').replace(/[^0-9]/g,''))]));
    if(nums.perStudent!==perStudent||nums.teacherSalary!==groups*12000||nums.classSalary!==groups*12000)
     throw Error(JSON.stringify({n,expected:{perStudent,teacherSalary:groups*12000},got,nums}));
    console.log('PASS classroom',n,'students',perStudent,'rub/student',groups,'groups');
@@ -36,7 +36,7 @@ const { chromium } = require('playwright');
   });
   await legacy.reload({waitUntil:'load'});
   const migrated=await legacy.locator('#tariffTheoryTotal').textContent();
-  if(Number(migrated.replace(/[^\\d]/g,''))!==800)throw Error('Legacy migration: '+migrated);
+  if(Number(migrated.replace(/[^0-9]/g,''))!==800)throw Error('Legacy migration: '+migrated);
   console.log('PASS legacy settings migration');
   await legacy.close();
  }finally{await browser.close();}
