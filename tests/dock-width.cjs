@@ -31,6 +31,35 @@ const { chromium } = require('playwright');
       }
       await page.close();
     }
+    // Classroom teacher pay is the slider value per group (max 15 students).
+    const theoryPage=await browser.newPage({viewport:{width:1366,height:900}});
+    await theoryPage.goto('http://127.0.0.1:8765/',{waitUntil:'load'});
+    for(const [students,perStudent,expense] of [[5,1200,6000],[15,400,6000],[16,750,12000],[30,400,12000]]){
+      await theoryPage.evaluate(n=>{
+        const state=JSON.parse(localStorage.getItem('autoshkola_finmodel_v1')||'{}');
+        const tariffs=state.tariffs||[];
+        for(let i=0;i<tariffs.length;i++){
+          const t=tariffs[i];
+          t.students=i===1?n:0;
+          t.theoryOnlineEnabled=false;t.theoryClassEnabled=i===1;t.theoryIndividualEnabled=false;
+          t.theoryOnlineStudents=0;t.theoryClassStudents=i===1?n:0;t.theoryIndividualStudents=0;
+          t.theoryClass=6000;
+        }
+        state.activeTariff=1;state.students=n;
+        localStorage.setItem('autoshkola_finmodel_v1',JSON.stringify(state));
+      },students);
+      await theoryPage.reload({waitUntil:'load'});
+      const result=await theoryPage.evaluate(()=>({
+        theory:document.querySelector('#tariffTheoryTotal').textContent,
+        expense:document.querySelector('#teacherSalarySummary').textContent,
+        group:document.querySelector('#teacherSalaryRow strong').textContent
+      }));
+      const numeric=v=>Number(v.replace(/[^0-9]/g,''));
+      const valid=numeric(result.theory)===perStudent&&numeric(result.expense)===expense&&numeric(result.group)===expense;
+      console.log(JSON.stringify({classroomStudents:students,valid,...result}));
+      if(!valid)failures++;
+    }
+    await theoryPage.close();
   }finally{await browser.close();}
   if(failures)throw Error(failures+' dock scenarios failed');
 })().catch(e=>{console.error(e);process.exit(1)});
