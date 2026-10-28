@@ -199,6 +199,16 @@ const { chromium } = require('playwright');
     const marketingValid=marketingResult.min==='0'&&marketingResult.value==='0'&&zeroRub(marketingResult.expenses)&&zeroRub(marketingResult.budget);
     console.log(JSON.stringify({marketingZero:true,valid:marketingValid,...marketingResult}));
     if(!marketingValid)failures++;
+    // Income breakdown must reconcile to total tariff revenue without double counting.
+    const income=await theoryPage.evaluate(()=>{
+      const ids=['revenue','driving','simulatorRevenue','theoryOnlineRevenue','theoryClassRevenue','theoryIndividualRevenue','tariffMarkupRevenue'];
+      return Object.fromEntries(ids.map(id=>[id,document.getElementById(id).textContent]));
+    });
+    const moneyNum=v=>Number(v.replace(/[^0-9-]/g,''));
+    const sumParts=['driving','simulatorRevenue','theoryOnlineRevenue','theoryClassRevenue','theoryIndividualRevenue','tariffMarkupRevenue'].reduce((a,id)=>a+moneyNum(income[id]),0);
+    const incomeValid=Math.abs(moneyNum(income.revenue)-sumParts)<=3;
+    console.log(JSON.stringify({incomeBreakdown:true,valid:incomeValid,...income}));
+    if(!incomeValid)failures++;
     await theoryPage.close();
   }finally{await browser.close();}
   if(failures)throw Error(failures+' dock scenarios failed');
