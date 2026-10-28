@@ -88,6 +88,25 @@ const { chromium } = require('playwright');
       console.log(JSON.stringify({simulatorEnabled:enabled,fee,valid,...result}));
       if(!valid)failures++;
     }
+    // Lesson demand: total teaching hours / selected duration * students (sum of tariffs).
+    for(const [hours,duration,students,expected] of [[30,2,15,225],[30,3,15,150],[31,2,15,232.5]]){
+      await theoryPage.evaluate(({hours,duration,students})=>{
+        const state=JSON.parse(localStorage.getItem('autoshkola_finmodel_v1'));
+        state.activeTariff=1;state.instructors=3;state.lessonLimit=120;
+        state.tariffs.forEach((t,i)=>{t.students=i===1?students:0;t.hours=hours;t.duration=duration;t.sim=false;});
+        localStorage.setItem('autoshkola_finmodel_v1',JSON.stringify(state));
+      },{hours,duration,students});
+      await theoryPage.reload({waitUntil:'load'});
+      const vals=await theoryPage.evaluate(()=>({
+        demand:document.querySelector('#totalLessons').textContent,
+        capacity:document.querySelector('#instructorCapacity').textContent,
+        lessonUnit:document.querySelector('#lessonCount').textContent
+      }));
+      const number=v=>Number(v.replace(/\\s/g,'').replace(',','.'));
+      const valid=Math.abs(number(vals.demand)-expected)<0.001&&number(vals.capacity)===360&&Math.abs(number(vals.lessonUnit)-hours/duration)<.01;
+      console.log(JSON.stringify({hours,duration,students,expected,valid,...vals}));
+      if(!valid)failures++;
+    }
     await theoryPage.close();
   }finally{await browser.close();}
   if(failures)throw Error(failures+' dock scenarios failed');
