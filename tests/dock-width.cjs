@@ -19,10 +19,10 @@ const { chromium } = require('playwright');
         const measured=await page.evaluate(()=>{
           const panels=[...document.querySelectorAll('#dockContent > .docked-panel')].filter(x=>!x.hidden);
           const rs=panels.map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width}});
-          return {viewport:window.innerWidth,docWidth:document.documentElement.scrollWidth,panels:rs};
+          return {viewport:window.innerWidth,docWidth:document.documentElement.scrollWidth,fit:document.getElementById('dockContent').dataset.viewportFit,panels:rs};
         });
         const quarter=measured.viewport/4;
-        const valid=measured.panels.length===count&&
+        const valid=measured.fit==='applied'&&measured.panels.length===count&&
           measured.panels.every(p=>p.width>50&&p.width<=quarter+2&&p.left>=-2&&p.right<=measured.viewport+2)&&
           measured.panels.every((p,i)=>i===0||p.left>=measured.panels[i-1].right-1);
         console.log(JSON.stringify({width,count,valid,...measured}));
