@@ -62,6 +62,7 @@ const { chromium } = require('playwright');
       if(!valid)failures++;
     }
     // Simulator expense is fixed 500 RUB per enrolled student; adjustable slider is tariff amount.
+    let simulatorBaseWithoutSimulator=null;
     for(const [enabled,fee] of [[false,500],[true,500],[true,2000]]){
       await theoryPage.evaluate(({enabled,fee})=>{
         const state=JSON.parse(localStorage.getItem('autoshkola_finmodel_v1'));
@@ -78,13 +79,20 @@ const { chromium } = require('playwright');
         practice:document.querySelector('#costStudent').textContent,
         theory:document.querySelector('#tariffTheoryTotal').textContent,
         base:document.querySelector('#tariffBaseCost').textContent,
-        total:document.querySelector('#simulatorTotal').textContent
+        total:document.querySelector('#simulatorTotal').textContent,
+        simulatorRevenue:document.querySelector('#simulatorRevenue').textContent,
+        simulatorProfit:document.querySelector('#simulatorProfit').textContent,
+        tariffPrice:document.querySelector('#calculatedTariffPrice').textContent
       }));
       const num=x=>Number(x.replace(/[^0-9]/g,''));
       const expectedUnit=enabled?500:0;
+      if(!enabled)simulatorBaseWithoutSimulator={base:num(result.base),tariffPrice:num(result.tariffPrice)};
       const valid=Number(result.slider)===fee&&result.disabled===!enabled&&
-        num(result.base)===num(result.practice)+num(result.theory)+expectedUnit&&
-        num(result.total)===15*expectedUnit;
+        num(result.base)===simulatorBaseWithoutSimulator.base&&
+        num(result.tariffPrice)===simulatorBaseWithoutSimulator.tariffPrice&&
+        num(result.total)===15*expectedUnit&&
+        num(result.simulatorRevenue)===(enabled?15*fee:0)&&
+        num(result.simulatorProfit)===(enabled?15*(fee-500):0);
       console.log(JSON.stringify({simulatorEnabled:enabled,fee,valid,...result}));
       if(!valid)failures++;
     }
@@ -177,7 +185,7 @@ const { chromium } = require('playwright');
       marketing:document.querySelector('#ads').textContent
     }));
     const number=v=>Number(v.replace(/[^0-9-]/g,''));
-    const expectedProfit=number(drive.income)-number(drive.payroll)-number(drive.simulator);
+    const expectedProfit=number(drive.income)-number(drive.payroll);
     const expectedExpenses=['payroll','simulator','teacher','fixed','leasing','tax','marketing'].reduce((n,k)=>n+number(drive[k]),0);
     const profitValid=number(drive.profit)===expectedProfit&&Math.abs(number(drive.total)-expectedExpenses)<=2;
     console.log(JSON.stringify({drivingProfitCheck:true,valid:profitValid,...drive}));
