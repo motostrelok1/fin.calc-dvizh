@@ -61,6 +61,33 @@ const { chromium } = require('playwright');
       console.log(JSON.stringify({classroomStudents:students,valid,...result}));
       if(!valid)failures++;
     }
+    // Simulator charge is per enrolled student and included once in tariff base and total expenses.
+    for(const [enabled,fee] of [[false,500],[true,500],[true,2000]]){
+      await theoryPage.evaluate(({enabled,fee})=>{
+        const state=JSON.parse(localStorage.getItem('autoshkola_finmodel_v1'));
+        const t=state.tariffs[1];
+        t.students=15;t.sim=enabled;t.simPrice=fee;
+        state.sim=enabled;state.activeTariff=1;
+        state.tariffs[0].students=0;state.tariffs[2].students=0;
+        localStorage.setItem('autoshkola_finmodel_v1',JSON.stringify(state));
+      },{enabled,fee});
+      await theoryPage.reload({waitUntil:'load'});
+      const result=await theoryPage.evaluate(()=>({
+        slider:document.querySelector('#simPrice').value,
+        disabled:document.querySelector('#simPrice').disabled,
+        practice:document.querySelector('#costStudent').textContent,
+        theory:document.querySelector('#tariffTheoryTotal').textContent,
+        base:document.querySelector('#tariffBaseCost').textContent,
+        total:document.querySelector('#simulatorTotal').textContent
+      }));
+      const num=x=>Number(x.replace(/[^0-9]/g,''));
+      const expectedUnit=enabled?fee:0;
+      const valid=Number(result.slider)===fee&&result.disabled===!enabled&&
+        num(result.base)===num(result.practice)+num(result.theory)+expectedUnit&&
+        num(result.total)===15*expectedUnit;
+      console.log(JSON.stringify({simulatorEnabled:enabled,fee,valid,...result}));
+      if(!valid)failures++;
+    }
     await theoryPage.close();
   }finally{await browser.close();}
   if(failures)throw Error(failures+' dock scenarios failed');
