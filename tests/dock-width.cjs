@@ -182,6 +182,23 @@ const { chromium } = require('playwright');
     const profitValid=number(drive.profit)===expectedProfit&&Math.abs(number(drive.total)-expectedExpenses)<=2;
     console.log(JSON.stringify({drivingProfitCheck:true,valid:profitValid,...drive}));
     if(!profitValid)failures++;
+    // Marketing can be set to zero and must stay at zero after reload.
+    await theoryPage.evaluate(()=>{
+      const data=JSON.parse(localStorage.getItem('autoshkola_finmodel_v1'));
+      data.marketing=0;
+      localStorage.setItem('autoshkola_finmodel_v1',JSON.stringify(data));
+    });
+    await theoryPage.reload({waitUntil:'load'});
+    const marketingResult=await theoryPage.evaluate(()=>({
+      min:document.querySelector('#s-marketing').min,
+      value:document.querySelector('#s-marketing').value,
+      expenses:document.querySelector('#ads').textContent,
+      budget:document.querySelector('#marketingBudget').textContent
+    }));
+    const zeroRub=v=>Number(v.replace(/[^0-9]/g,''))===0;
+    const marketingValid=marketingResult.min==='0'&&marketingResult.value==='0'&&zeroRub(marketingResult.expenses)&&zeroRub(marketingResult.budget);
+    console.log(JSON.stringify({marketingZero:true,valid:marketingValid,...marketingResult}));
+    if(!marketingValid)failures++;
     await theoryPage.close();
   }finally{await browser.close();}
   if(failures)throw Error(failures+' dock scenarios failed');
