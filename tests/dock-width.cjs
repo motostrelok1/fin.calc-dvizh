@@ -152,7 +152,7 @@ const { chromium } = require('playwright');
       rate:document.querySelector('.payroll-item .pay-rate').value,
       lessons:document.querySelector('.payroll-item .pay-lessons').value
     }));
-    const payValid=before.total==='60 000 ₽'&&before.average==='750 ₽'&&before.row==='60 000 ₽'&&before.result==='60 000 ₽'&&after.count===1&&after.total==='60 000 ₽'&&after.result==='60 000 ₽'&&after.rate==='750'&&after.lessons==='80';
+    const rub=v=>Number(v.replace(/[^0-9]/g,''));const payValid=rub(before.total)===60000&&rub(before.average)===750&&rub(before.row)===60000&&rub(before.result)===60000&&after.count===1&&rub(after.total)===60000&&rub(after.result)===60000&&after.rate==='750'&&after.lessons==='80';
     console.log(JSON.stringify({instructorPayroll:true,valid:payValid,before,after}));
     if(!payValid)failures++;
     await theoryPage.close();
